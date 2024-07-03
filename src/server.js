@@ -15,17 +15,40 @@ app.get("/*", (_, res) => res.redirect("/"));
 const httpServer = http.createServer(app);
 const wsServer = SocketIO(httpServer);
 
+function publicRooms() {
+    const {sockets: {adapter: {sids, rooms}}} = wsServer;
+
+    const publicRooms = [];
+    rooms.forEach((_, key) => {
+        if(sids.get(key)  === undefined) {
+            publicRooms.push(key);
+        }
+    });
+
+    return publicRooms;
+}
+
 wsServer.on("connection", socket => {
     socket["nickname"] = "Anon";
     socket.on("enter_room", (roomName, done) => {
         socket.join(roomName);
         done(); 
+
         // 클라에게 보냈지만 요청을 받지 못하는 상태임
         socket.to(roomName).emit("welcome", socket.nickname);
+
+        console.log("emit room_change");
+        wsServer.sockets.emit("room_change", publicRooms());
     });
 
     socket.on("disconnecting", () => {
         socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname));
+    });
+
+    socket.on("disconnect", () => {
+        console.log("emit room_change");
+        console.log(`publicRooms: ${publicRooms()}`);
+        wsServer.sockets.emit("room_change", publicRooms());
     });
 
     socket.on("new_message", (msg, roomName, done) => {
