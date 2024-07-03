@@ -28,6 +28,10 @@ function publicRooms() {
     return publicRooms;
 }
 
+function countRoom(roomName) {
+    return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+}
+
 wsServer.on("connection", socket => {
     socket["nickname"] = "Anon";
     socket.on("enter_room", (roomName, done) => {
@@ -35,19 +39,16 @@ wsServer.on("connection", socket => {
         done(); 
 
         // 클라에게 보냈지만 요청을 받지 못하는 상태임
-        socket.to(roomName).emit("welcome", socket.nickname);
+        socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));
 
-        console.log("emit room_change");
         wsServer.sockets.emit("room_change", publicRooms());
     });
 
     socket.on("disconnecting", () => {
-        socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname));
+        socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1));
     });
 
     socket.on("disconnect", () => {
-        console.log("emit room_change");
-        console.log(`publicRooms: ${publicRooms()}`);
         wsServer.sockets.emit("room_change", publicRooms());
     });
 
@@ -60,27 +61,6 @@ wsServer.on("connection", socket => {
    
 });
 
-
-// const wss = new WebSocket.Server({server});
-// const sockets = [];
-// wss.on("connection", (socket) => {
-//     console.log("Connected to Browser ✅");
-//     sockets.push(socket);
-//     socket["nickname"] = "Anon";
-//     socket.on("close", () => console.log("Disconnected from the Browser ❌"))
-//     socket.on("message", (msg) => {
-//         const message = JSON.parse(msg)
-//         switch(message.type) {
-//             case "new_message":
-//                 sockets.forEach(aSocket => aSocket.send(`${socket.nickname}: ${message.payload}`));
-//                 break;
-//             case "nickname":
-//                 socket["nickname"] = message.payload;
-//                 break;
-//             default:
-//         }
-//     });
-// });
 
 const handleListen = () => console.log(`Listening on http://localhost:3000`)
 httpServer.listen(3000, handleListen);
