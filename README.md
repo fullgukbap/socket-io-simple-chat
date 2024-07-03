@@ -1,3 +1,4 @@
-# Zoom
+# socket-io-simple-chat
+socket io의 간단한 채팅 서비스 입니다.
 
-Zoom Clone using NodeJS WEBRTC and Websockets.
+code by nomadercodres
